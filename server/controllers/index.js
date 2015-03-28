@@ -7,6 +7,8 @@ var path = require('path');
 
 module.exports = {
   messages: {
+    // Calls Models with Query (Which Room) and Callback/Promise
+    // a function which handles a get request for all messages
     get: function (req, res) {
       console.log("Serving request type " + req.method + " for url " + req.url);
 
@@ -14,13 +16,11 @@ module.exports = {
       var pathname = parsedUrl.pathname;
       var roomname = pathname.slice(9) || 'lobby';
 
-      models.messages.get("default", roomname, function(data){
-        res.writeHead(200, {"Content-Type":"application/json"});
-        res.end(data);
-      })
-
-      // Calls Models with Query (Which Room) and Callback/Promise
-    }, // a function which handles a get request for all messages
+      models.messages.get(roomname, function(data){
+        res.json(data);
+      });
+    }, 
+    // a function which handles posting a message to the database
     post: function (req, res) {
       module.exports.users.post(req, res, function(id) {
         // right now our request has a username instead of userid field
@@ -29,38 +29,29 @@ module.exports = {
         req.body.message = req.body.message || req.body.text;
         models.messages.post(req, res, function(err, success) {
           if (err) {
-            res.writeHead(400);
-            res.end(err);
+            console.log('option 1');
+            res.sendStatus(400);
           } else {
-            res.writeHead(201);
-            res.end('Created');
+            res.sendStatus(201);
           }
         });
       });
-
-    } // a function which handles posting a message to the database
+    } 
   },
 
-  users: {
-    // Ditto as above
-
-    // Post:
-    // Step 1: Get Users to determine if user is unique, get userID
-    // Step 2: Post User if necessary
-    // Step 3: Post Message
-    get: function (req, res) { // Gets All
-      var users = models.users.get();
-
+  group: {
+    get: function (req, res, callback, group) { // Gets All
+      callback(models[group].get());
     },
-    post: function (req, res, callback) { // New User
-      var username = req.body.username;
-      models.users.getOne(username, function(id){
+    post: function (req, res, callback, group) { // New User
+      var groupName = req.body[group.substr(0, group.length-1)+'name'];
+      models[group].getOne(groupName, function(id){
         if (id < 0){
-          models.users.post(username, function(err, success){
+          models[group].post(groupName, function(err, success){
             if (err) {
-              res.writeHead(400);
-              res.end(err);
-            } else models.users.getOne(username, function(id) {
+              console.log('option 2 ', err);
+              res.sendStatus(400);
+            } else models[group].getOne(groupName, function(id) {
               callback(id);
             });
           });    
@@ -68,6 +59,24 @@ module.exports = {
           callback(id);
         }
       });
+    }
+  },
+
+  rooms: {
+    get: function (req, res, callback) { // Gets All
+      module.exports.group.get(req, res, callback, 'rooms');
+    },
+    post: function (req, res, callback) { // New User
+      module.exports.group.post(req, res, callback, 'rooms');
+    }
+  },
+
+  users: {
+    get: function (req, res, callback) { // Gets All
+      module.exports.group.get(req, res, callback, 'users');
+    },
+    post: function (req, res, callback) { // New User
+      module.exports.group.post(req, res, callback, 'users');
     }
   }
 };
