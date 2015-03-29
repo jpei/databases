@@ -94,18 +94,23 @@ module.exports = {
     get: function(req, res) {
       Message.findAll({ include: [User]})
         .complete(function(err, results){
-          res.json(results);
-        })
+          if (err) {
+            console.log('Get Message Err: ', err);
+          } else {
+            //console.log(JSON.stringify(results));
+            res.json({results:results});
+          }
+        });
     },
     post: function(req, res) {
       console.log('body: ', req.body);
       console.log('username: ', req.body.username);
-      User.findOrCreate({username: req.body.username})
+      User.findOrCreate({where: {username: req.body.username}})
         .complete(function(err, user){
           var params = {
-            text: req.body[text], 
+            text: req.body.text, 
             userid: user.id,
-            roomname: req.body[roomname]
+            roomname: req.body.roomname
           };
           Message.create(params)
             .complete(function(err, results){
