@@ -87,7 +87,7 @@ var Message = db.Message;
 
 
 var userFields = ['username'];
-var messageFields = ['message', 'username', 'roomname', 'createdAt', 'updatedAt'];
+var messageFields = ['message', 'UserId', 'roomname', 'createdAt', 'updatedAt']; // Do I want UserId?
 
 module.exports = {
   messages: {
@@ -103,15 +103,17 @@ module.exports = {
         });
     },
     post: function(req, res) {
-      console.log('body: ', req.body);
-      console.log('username: ', req.body.username);
+      // console.log('body: ', req.body);
+      // console.log('username: ', req.body.username);
+      req.body.text = req.body.text || req.body.message;
       User.findOrCreate({where: {username: req.body.username}})
         .complete(function(err, user){
           var params = {
             text: req.body.text, 
-            userid: user.id,
+            UserId: user[0].id,
             roomname: req.body.roomname
           };
+          console.log('params: ', JSON.stringify(params));
           Message.create(params)
             .complete(function(err, results){
               res.sendStatus(201);
