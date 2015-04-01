@@ -4,7 +4,7 @@ var router = require('express').Router();
 // Calls Controllers, Called by App
 
 for (var route in controllers) {
-  router.route("/" + route)
+  router.route("/" + route+"*")
     .get(controllers[route].get)
     .post(controllers[route].post);
 }
